@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^17.2.3",
+    "node-telegram-bot-api": "^0.66.0",
     "puppeteer": "^24.23.0"
   }
 }

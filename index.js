@@ -1,5 +1,10 @@
 require('dotenv').config();
 const puppeteer = require('puppeteer');
+const fs = require('fs').promises;
+const path = require('path');
+const { sendNotification } = require('./telegramNotifier');
+
+const DB_FILE_PATH = path.join(__dirname, 'movements_db.json');
 
 async function run() {
     console.log('Start the bot...');
@@ -193,7 +198,25 @@ async function run() {
         console.log(formattedMovements);
 
         console.log('Data extraction complete.');
-        await browser.close();
+
+        let previousMovements = [];
+        try {
+            const data = await fs.readFile(DB_FILE_PATH, 'utf-8');
+            previousMovements = JSON.parse(data);
+        } catch (error) {
+            console.log('Memory file not found. A new one will be created.');
+        }
+        const previousMovementsSet = new Set(previousMovements.map(m => JSON.stringify(m)));
+        const newMovements = formattedMovements.filter(m => !previousMovementsSet.has(JSON.stringify(m)));
+
+        if (newMovements.length > 0) {
+            console.log(`¡${newMovements.length} new movement(s) found!`);
+            await sendNotification(principalInfo, newMovements);
+        } else {
+            console.log('No new movements found.');
+        }
+        await fs.writeFile(DB_FILE_PATH, JSON.stringify(formattedMovements, null, 2));
+        console.log('Current movements saved to memory file.');
 
         // --- END OF DATA EXTRACTION ---
     } catch (error) {
