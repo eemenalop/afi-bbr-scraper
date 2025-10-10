@@ -227,7 +227,7 @@ async function runScraper() {
 
 //SCHEDULING LOGIC
 
-const cronSchedule = '0 */10 * * *';
+const cronSchedule = '0 */20 * * *';
 
 cron.schedule(cronSchedule, () => {
     console.log('====================================================');
