@@ -11,7 +11,7 @@ async function run() {
     let browser;
     try {
         browser = await puppeteer.launch({
-            headless: false,
+            headless: true,
             slowMo: 100,
             args: ['--ignore-certificate-errors']
         });
@@ -74,7 +74,7 @@ async function run() {
         const myPassword = process.env.MY_PASSWORD;
         const toggleCaseSelector = 'a.tt_SYM_UPP';
         let actualKeyboardState = 'UPPERCASE';
-        console.log(`Keyboard initial state: ${actualKeyboardState}`);
+        console.log('Starting enter password...')
         for(const char of myPassword){
             try {
                 const IsNumber = !isNaN(parseInt(char));
@@ -84,13 +84,11 @@ async function run() {
                 if(IsNumber){
                     const numberSelector = numberMap[char];
                     if (!numberSelector) throw new Error(`Number ${char} not found in map.`);
-                    console.log(`Character '${char}' is a number. Clicking selector: ${numberSelector}`);
                     await page.click(numberSelector);
                 } else {
                     if(IsUpperCase || IsLowerCase){
                         const requiredState = IsUpperCase ? 'UPPERCASE' : 'LOWERCASE';
                         if(actualKeyboardState !== requiredState){
-                            console.log(`Change keyboard mode to: ${requiredState}`);
                             await page.click(toggleCaseSelector);
                             actualKeyboardState = requiredState;
                             await new Promise(r => setTimeout(r, 150));
@@ -99,16 +97,12 @@ async function run() {
 
                 const keyToFind = (IsUpperCase || IsLowerCase) ? char.toUpperCase() : char;
                 const selectorXPath = `//*[normalize-space()="${keyToFind}"]`;
-                console.log(`Looking for key for character: '${char}' (searching as '${keyToFind}')`);
                 const key = await page.waitForSelector(`xpath/${selectorXPath}`, {visible: true, timeout: 5000});
                 await key.click();
                 }
-
-                console.log(`The key is clicked with charcter: '${char}'`);
                 await new Promise(r => setTimeout(r, 150));
 
             } catch (error) {
-                console.log(`Error attempting click on key with char '${char}': `, error);
                 await browser.close();
                 return;
             }

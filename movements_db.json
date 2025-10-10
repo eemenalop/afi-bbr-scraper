@@ -1,6 +1,15 @@
 [
   {
     "Número de Encargo": "10000110908",
+    "Fecha Mov.": "09/Oct/2025",
+    "Tipo Mov.": "RENDIMIENTOS BRUTOS (+)",
+    "Valor": "$1,21",
+    "Beneficiario": "MENA LOPEZ EDGAR ENRIQUE",
+    "Identificación": "40224175485",
+    "Descripción": ""
+  },
+  {
+    "Número de Encargo": "10000110908",
     "Fecha Mov.": "08/Oct/2025",
     "Tipo Mov.": "RENDIMIENTOS BRUTOS (+)",
     "Valor": "$1,32",
@@ -29,15 +38,6 @@
   {
     "Número de Encargo": "10000110908",
     "Fecha Mov.": "05/Oct/2025",
-    "Tipo Mov.": "RENDIMIENTOS BRUTOS (+)",
-    "Valor": "$1,33",
-    "Beneficiario": "MENA LOPEZ EDGAR ENRIQUE",
-    "Identificación": "40224175485",
-    "Descripción": ""
-  },
-  {
-    "Número de Encargo": "10000110908",
-    "Fecha Mov.": "04/Oct/2025",
     "Tipo Mov.": "RENDIMIENTOS BRUTOS (+)",
     "Valor": "$1,33",
     "Beneficiario": "MENA LOPEZ EDGAR ENRIQUE",
