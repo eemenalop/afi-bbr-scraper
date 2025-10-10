@@ -3,17 +3,19 @@ const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const path = require('path');
 const { sendNotification } = require('./telegramNotifier');
+const cron = require('node-cron');
 
 const DB_FILE_PATH = path.join(__dirname, 'movements_db.json');
 
-async function run() {
-    console.log('Start the bot...');
+async function runScraper() {
+    const realTime = new Date().toLocaleString('es-DO', {timeZone: 'America/Santo_Domingo'})
+    console.log(`[${realTime}] - Start the bot...`);
     let browser;
     try {
         browser = await puppeteer.launch({
             headless: true,
             slowMo: 100,
-            args: ['--ignore-certificate-errors']
+            args: ['--ignore-certificate-errors', '--no-sandbox', '--disable-setuid-sandbox']
         });
         const principalPage = await browser.newPage();
         await principalPage.goto('https://www.afireservas.com/')
@@ -223,8 +225,21 @@ async function run() {
     }    
 }
 
-run();
+//SCHEDULING LOGIC
 
-//Tipo Persona = id:selectTipoPersona
-//Usuario = id: userid
-//Contrasena = id:auth_pass
+const cronSchedule = '0 */10 * * *';
+
+cron.schedule(cronSchedule, () => {
+    console.log('====================================================');
+    const trigger = new Date().toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo' });
+    console.log(`CRON: [${trigger}] - It's time to execute the task.`);
+
+    runScraper();
+}, {
+    schedule: true,
+    timezone: "America/Santo_Domingo"
+});
+
+console.log(`El scraper se ha iniciado y está en modo de espera.`);
+console.log(`La próxima ejecución está programada según el horario: ${cronSchedule}`);
+console.log(`Zona Horaria: America/Santo_Domingo`);
