@@ -23,16 +23,12 @@ async function runScraper() {
         const dropDownSelectorButton = '#enLinea';
         await principalPage.waitForSelector(dropDownSelectorButton);
         await principalPage.click(dropDownSelectorButton);
-        console.log('Dropdown button clicked.');
         const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())));
 
         const firstOptionSelector = 'a[href="https://afienlinea.afireservas.com:7004/G3A/inicio/login.pub"]';
-        console.log('Waiting for the login option to appear...');
         await principalPage.waitForSelector(firstOptionSelector);
         await principalPage.click(firstOptionSelector);
-
         const page = await newPagePromise;
-        console.log('New login page detected and is now active.');
 
         console.log('Login Home page loaded. Interacting with the form...');
         //Wait and select an option of dropdown menu
@@ -60,7 +56,6 @@ async function runScraper() {
         const numberMap = await page.evaluate(() => {
             const mapa = {};
             const numberKeys = document.querySelectorAll('.tecla_numero');
-            console.log(numberKeys)
             numberKeys.forEach(key => {
                 const numberText = key.innerText.trim();
                 const keyId = key.id;
@@ -112,10 +107,8 @@ async function runScraper() {
         console.log('Password entry complete.')
 
         const loginButtonSelector = '.btn.poplight';
-        console.log('Clicking the final login button...');
         await page.waitForSelector(loginButtonSelector);
         await page.click(loginButtonSelector);
-        console.log('Login button clicked!');
 
         await page.waitForNavigation();
         console.log('Successfully logged in!');
@@ -123,22 +116,18 @@ async function runScraper() {
         const accountSetting = '.oth';
         await page.waitForSelector(accountSetting);
         await page.hover(accountSetting);
-        console.log('Account Settings clicked!');
 
         const transationalWeb = 'a[onclick="osm_enviarFormulario(\'form_filial_1\');"]';
         await page.waitForSelector(transationalWeb);
         await page.click(transationalWeb);
-        console.log('Web Transaccional clicked!');
 
         const fundSelector = 'a[onclick="$(\'#tabla_1\').toggle(); return false;"]';
         await page.waitForSelector(fundSelector);
         await page.click(fundSelector);
-        console.log('Investment fund selected!');
 
         const accountNumber = 'a[onclick^="verDetalle"]';
         await page.waitForSelector(accountNumber);
         await page.click(accountNumber);
-        console.log('Account number clicked!');
         console.log('Successfully navigated to the target page! Starting data extraction...');
 
         //START OF DATA EXTRACTION 
@@ -161,8 +150,6 @@ async function runScraper() {
             });
             return data;
         }, principalInfoSelector);
-        console.log('--- Principal Information ---');
-        console.log(principalInfo);
 
         // Extraction of the movement table
         const movementSelector = 'table.tb-02';
@@ -189,9 +176,6 @@ async function runScraper() {
             });
             return movementObject;
             });
-
-        console.log('--- MOVEMENT DETAILS ---');
-        console.log(formattedMovements);
 
         console.log('Data extraction complete.');
 
@@ -227,7 +211,7 @@ async function runScraper() {
 
 //SCHEDULING LOGIC
 
-const cronSchedule = '* * * * *';
+const cronSchedule = '0 */20 * * *';
 
 cron.schedule(cronSchedule, () => {
     console.log('====================================================');
