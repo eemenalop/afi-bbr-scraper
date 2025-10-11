@@ -65,8 +65,7 @@ async function runScraper() {
             });
             return mapa;
         });
-        console.log('Number map created:', numberMap);
-
+        
         //Write the password ussing map and logic state
         const myPassword = process.env.MY_PASSWORD;
         const toggleCaseSelector = 'a.tt_SYM_UPP';
@@ -211,7 +210,7 @@ async function runScraper() {
 
 //SCHEDULING LOGIC
 
-const cronSchedule = '0 */20 * * *';
+const cronSchedule = '0 20 * * *';
 
 cron.schedule(cronSchedule, () => {
     console.log('====================================================');
