@@ -13,9 +13,23 @@ async function runScraper() {
     let browser;
     try {
         browser = await puppeteer.launch({
-            headless: true,
+            headless: false,
             slowMo: 100,
-            args: ['--ignore-certificate-errors', '--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+                '--ignore-certificate-errors',
+                '--no-sandbox', 
+                '--disable-setuid-sandbox',
+                '--memory-pressure-off',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--disable-extensions',
+                '--disable-plugins',
+                '--disable-images'
+            ]
         });
         const principalPage = await browser.newPage();
         await principalPage.goto('https://www.afireservas.com/')
@@ -29,6 +43,7 @@ async function runScraper() {
         await principalPage.waitForSelector(firstOptionSelector);
         await principalPage.click(firstOptionSelector);
         const page = await newPagePromise;
+        await principalPage.close();
 
         console.log('Login Home page loaded. Interacting with the form...');
         //Wait and select an option of dropdown menu
@@ -112,6 +127,16 @@ async function runScraper() {
         await page.waitForNavigation();
         console.log('Successfully logged in!');
 
+        // Clear browser cache and storage to free memory
+        await page.evaluate(() => {
+            localStorage.clear();
+            sessionStorage.clear();
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+        });
+
         const accountSetting = '.oth';
         await page.waitForSelector(accountSetting);
         await page.hover(accountSetting);
@@ -181,7 +206,9 @@ async function runScraper() {
         let previousMovements = [];
         try {
             const data = await fs.readFile(DB_FILE_PATH, 'utf-8');
-            previousMovements = JSON.parse(data);
+            const parsed = JSON.parse(data);
+            // Only keep last 100 movements to limit memory usage
+            previousMovements = Array.isArray(parsed) ? parsed.slice(-100) : [];
         } catch (error) {
             console.log('Memory file not found. A new one will be created.');
         }
@@ -196,21 +223,26 @@ async function runScraper() {
         }
         await fs.writeFile(DB_FILE_PATH, JSON.stringify(formattedMovements, null, 2));
         console.log('Current movements saved to memory file.');
+        await page.close(); // Close the page immediately after data extraction
 
         // --- END OF DATA EXTRACTION ---
     } catch (error) {
         console.error('An error occurred during the process:', error);
     } finally {
         if (browser) {
-                console.log('Process complete. Closing the bot...');
-                await browser.close();
-            }
+            // Close all remaining pages first
+            const pages = await browser.pages();
+            await Promise.all(pages.map(page => page.close()));
+            
+            console.log('Process complete. Closing the bot...');
+            await browser.close();
+        }
     }    
 }
 
 //SCHEDULING LOGIC
 
-const cronSchedule = '0 20 * * *';
+const cronSchedule = '24 20 * * *';
 
 cron.schedule(cronSchedule, () => {
     console.log('====================================================');
