@@ -13,7 +13,7 @@ async function runScraper() {
     let browser;
     try {
         browser = await puppeteer.launch({
-            headless: false,
+            headless: true,
             slowMo: 100,
             args: [
                 '--ignore-certificate-errors',
@@ -242,7 +242,7 @@ async function runScraper() {
 
 //SCHEDULING LOGIC
 
-const cronSchedule = '35 20 * * *';
+const cronSchedule = '39 20 * * *';
 
 cron.schedule(cronSchedule, () => {
     console.log('====================================================');
