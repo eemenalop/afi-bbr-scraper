@@ -103,11 +103,21 @@ async function runScraper() {
         
         //Write the password ussing map and logic state
         const myPassword = process.env.MY_PASSWORD;
+        
+        // Verify credentials are loaded (show partial for debugging)
+        console.log(`User loaded: ${myUser ? myUser.substring(0, 3) + '***' : 'NOT LOADED'}`);
+        console.log(`Password loaded: ${myPassword ? myPassword.substring(0, 2) + '***' + ' (length: ' + myPassword.length + ')' : 'NOT LOADED'}`);
+        
         const toggleCaseSelector = 'a.tt_SYM_UPP';
         let actualKeyboardState = 'UPPERCASE';
         console.log('Starting enter password...')
+        console.log('🔍 DEBUG: Password characters being pressed:');
+        
         for(const char of myPassword){
             try {
+                // DEBUG: Log cada tecla que se está presionando
+                console.log(`  → Pressing: "${char}" (Type: ${!isNaN(parseInt(char)) ? 'Number' : (char >= 'A' && char <= 'Z') ? 'Uppercase' : (char >= 'a' && char <= 'z') ? 'Lowercase' : 'Special'})`);
+                
                 const IsNumber = !isNaN(parseInt(char));
                 const IsUpperCase = char >= 'A' && char <= 'Z';
                 const IsLowerCase = char >= 'a' && char <= 'z';
@@ -116,12 +126,14 @@ async function runScraper() {
                     const numberSelector = numberMap[char];
                     if (!numberSelector) throw new Error(`Number ${char} not found in map.`);
                     await page.click(numberSelector);
+                    console.log(`    ✓ Clicked number: ${char}`);
                 } else {
                     if(IsUpperCase || IsLowerCase){
                         const requiredState = IsUpperCase ? 'UPPERCASE' : 'LOWERCASE';
                         if(actualKeyboardState !== requiredState){
                             await page.click(toggleCaseSelector);
                             actualKeyboardState = requiredState;
+                            console.log(`    ↔ Toggled keyboard to: ${requiredState}`);
                             await new Promise(r => setTimeout(r, 150));
                         }
                     }
@@ -130,6 +142,7 @@ async function runScraper() {
                 const selectorXPath = `//*[normalize-space()="${keyToFind}"]`;
                 const key = await waitForSelectorWithScreenshot(page, `xpath/${selectorXPath}`, {visible: true, timeout: 5000});
                 await key.click();
+                console.log(`    ✓ Clicked key: ${keyToFind}`);
                 }
                 await new Promise(r => setTimeout(r, 150));
 
@@ -145,7 +158,20 @@ async function runScraper() {
         await page.click(loginButtonSelector);
 
         await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 });
-        console.log('Successfully logged in!');
+        
+        // REAL login validation - check if login actually succeeded
+        const currentUrl = page.url();
+        console.log('Post-login URL:', currentUrl);
+        
+        if (currentUrl.includes('failed') || currentUrl.includes('login.pub')) {
+            console.error('❌ LOGIN FAILED - Credentials were rejected');
+            const screenshotPath = `login-failed-${Date.now()}.png`;
+            await page.screenshot({ path: screenshotPath, fullPage: true });
+            await sendErrorScreenshot(screenshotPath, `Login falló - revisa las credenciales en Railway\n\nURL: ${currentUrl}`);
+            throw new Error('Login failed - invalid credentials or login process error');
+        }
+        
+        console.log('✅ Successfully logged in!');
 
         // Clear browser storage to free memory (BUT NOT COOKIES - they contain session data)
         await page.evaluate(() => {
@@ -156,15 +182,6 @@ async function runScraper() {
 
         // Wait for page to fully render after login (increased for Railway)
         await new Promise(r => setTimeout(r, 5000));
-
-        // DEBUG: Log page content to understand what's on the page
-        const pageContent = await page.content();
-        console.log('Page HTML length:', pageContent.length);
-        console.log('Page URL:', page.url());
-        
-        // Check if .oth exists in HTML
-        const othExists = pageContent.includes('class="oth"');
-        console.log('.oth exists in HTML:', othExists);
 
         const accountSetting = '.oth';
         // Removed 'visible: true' for better compatibility with headless mode in Railway
