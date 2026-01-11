@@ -242,7 +242,11 @@ async function runScraper() {
 
 //SCHEDULING LOGIC
 
-const cronSchedule = '0 20 * * *';
+// Every minute
+const cronSchedule = '* * * * *';
+
+// Every day at 8:00 PM
+//const cronSchedule = '0 20 * * *';
 
 cron.schedule(cronSchedule, () => {
     console.log('====================================================');
