@@ -138,7 +138,7 @@ async function runScraper() {
         });
 
         const accountSetting = '.oth';
-        await page.waitForSelector(accountSetting);
+        await page.waitForSelector(accountSetting, {timeout: 10000});
         await page.hover(accountSetting);
 
         const transationalWeb = 'a[onclick="osm_enviarFormulario(\'form_filial_1\');"]';
