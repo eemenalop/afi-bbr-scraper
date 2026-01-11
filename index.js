@@ -2,10 +2,30 @@ require('dotenv').config();
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const path = require('path');
-const { sendNotification } = require('./telegramNotifier');
+const { sendNotification, sendErrorScreenshot } = require('./telegramNotifier');
 const cron = require('node-cron');
 
 const DB_FILE_PATH = path.join(__dirname, 'movements_db.json');
+
+// Helper function to wait for selector with automatic screenshot on error
+async function waitForSelectorWithScreenshot(page, selector, options = {}) {
+    try {
+        return await page.waitForSelector(selector, options);
+    } catch (error) {
+        console.error(`Failed to find selector: ${selector}. Taking screenshot...`);
+        const screenshotPath = `error-${Date.now()}.png`;
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        console.log(`Screenshot saved. Sending to Telegram...`);
+        
+        // Enviar screenshot por Telegram
+        await sendErrorScreenshot(
+            screenshotPath, 
+            `Error al buscar el selector: ${selector}\n\nTimeout: ${options.timeout || 30000}ms`
+        );
+        
+        throw error;
+    }
+}
 
 async function runScraper() {
     const realTime = new Date().toLocaleString('es-DO', {timeZone: 'America/Santo_Domingo'})
@@ -35,12 +55,12 @@ async function runScraper() {
         await principalPage.goto('https://www.afireservas.com/')
         console.log('Home Page Loaded. Looking for the button to access the login');
         const dropDownSelectorButton = '#enLinea';
-        await principalPage.waitForSelector(dropDownSelectorButton);
+        await waitForSelectorWithScreenshot(principalPage, dropDownSelectorButton);
         await principalPage.click(dropDownSelectorButton);
         const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())));
 
         const firstOptionSelector = 'a[href="https://afienlinea.afireservas.com:7004/G3A/inicio/login.pub"]';
-        await principalPage.waitForSelector(firstOptionSelector);
+        await waitForSelectorWithScreenshot(principalPage, firstOptionSelector);
         await principalPage.click(firstOptionSelector);
         const page = await newPagePromise;
         await principalPage.close();
@@ -49,25 +69,25 @@ async function runScraper() {
         //Wait and select an option of dropdown menu
         const personTypeSelectorId = '#selectTipoPersona';
         const optionPersonTypeValue = 'N';
-        await page.waitForSelector(personTypeSelectorId);
+        await waitForSelectorWithScreenshot(page, personTypeSelectorId);
         await page.select(personTypeSelectorId, optionPersonTypeValue);
 
         //Wait and write on user input
         const userInputId = '#userid';
         const myUser = process.env.MY_USER;
-        await page.waitForSelector(userInputId);
+        await waitForSelectorWithScreenshot(page, userInputId);
         await page.type(userInputId, myUser);
 
         //Wait and click on password field (for enable keyboard)
         const passInputId = '#auth_pass';
-        await page.waitForSelector(passInputId);
+        await waitForSelectorWithScreenshot(page, passInputId);
         await page.click(passInputId);
 
         console.log('Virtual keyboard actived. Typing password...');
 
         //Mapping the number pad
         console.log('Mapping the number pad...');
-        await page.waitForSelector('.tecla_numero');
+        await waitForSelectorWithScreenshot(page, '.tecla_numero');
         const numberMap = await page.evaluate(() => {
             const mapa = {};
             const numberKeys = document.querySelectorAll('.tecla_numero');
@@ -108,7 +128,7 @@ async function runScraper() {
 
                 const keyToFind = (IsUpperCase || IsLowerCase) ? char.toUpperCase() : char;
                 const selectorXPath = `//*[normalize-space()="${keyToFind}"]`;
-                const key = await page.waitForSelector(`xpath/${selectorXPath}`, {visible: true, timeout: 5000});
+                const key = await waitForSelectorWithScreenshot(page, `xpath/${selectorXPath}`, {visible: true, timeout: 5000});
                 await key.click();
                 }
                 await new Promise(r => setTimeout(r, 150));
@@ -121,10 +141,10 @@ async function runScraper() {
         console.log('Password entry complete.')
 
         const loginButtonSelector = '.btn.poplight';
-        await page.waitForSelector(loginButtonSelector);
+        await waitForSelectorWithScreenshot(page, loginButtonSelector);
         await page.click(loginButtonSelector);
 
-        await page.waitForNavigation();
+        await page.waitForNavigation({ waitUntil: 'networkidle2' });
         console.log('Successfully logged in!');
 
         // Clear browser cache and storage to free memory
@@ -137,27 +157,30 @@ async function runScraper() {
             });
         });
 
+        // Wait for page to fully render after login
+        await new Promise(r => setTimeout(r, 2000));
+
         const accountSetting = '.oth';
-        await page.waitForSelector(accountSetting, {timeout: 10000});
+        await waitForSelectorWithScreenshot(page, accountSetting, {timeout: 30000, visible: true});
         await page.hover(accountSetting);
 
         const transationalWeb = 'a[onclick="osm_enviarFormulario(\'form_filial_1\');"]';
-        await page.waitForSelector(transationalWeb);
+        await waitForSelectorWithScreenshot(page, transationalWeb);
         await page.click(transationalWeb);
 
         const fundSelector = 'a[onclick="$(\'#tabla_1\').toggle(); return false;"]';
-        await page.waitForSelector(fundSelector);
+        await waitForSelectorWithScreenshot(page, fundSelector);
         await page.click(fundSelector);
 
         const accountNumber = 'a[onclick^="verDetalle"]';
-        await page.waitForSelector(accountNumber);
+        await waitForSelectorWithScreenshot(page, accountNumber);
         await page.click(accountNumber);
         console.log('Successfully navigated to the target page! Starting data extraction...');
 
         //START OF DATA EXTRACTION 
 
         const principalInfoSelector = 'div.score:not([style*="display:none"])';
-        await page.waitForSelector(principalInfoSelector);
+        await waitForSelectorWithScreenshot(page, principalInfoSelector);
         const principalInfo = await page.evaluate((selector) => {
             const infoContainer = document.querySelector(selector);
             if(!infoContainer) return {};
@@ -177,7 +200,7 @@ async function runScraper() {
 
         // Extraction of the movement table
         const movementSelector = 'table.tb-02';
-        await page.waitForSelector(movementSelector);
+        await waitForSelectorWithScreenshot(page, movementSelector);
 
         const movementsData = await page.evaluate((selector) => {
             const table = document.querySelector(selector);
