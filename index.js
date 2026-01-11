@@ -102,7 +102,7 @@ async function runScraper() {
         });
         
         //Write the password ussing map and logic state
-        const myPassword = process.env.MY_PASSWORD;
+        const myPassword = process.env.MY-PASSWORD;
         
         // Verify credentials are loaded (show partial for debugging)
         console.log(`User loaded: ${myUser ? myUser.substring(0, 3) + '***' : 'NOT LOADED'}`);
