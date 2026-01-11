@@ -265,18 +265,31 @@ async function runScraper() {
 
 //SCHEDULING LOGIC
 
-// Every minute
-const cronSchedule = '* * * * *';
+// Flag to prevent concurrent executions
+let isRunning = false;
 
-// Every day at 8:00 PM
-//const cronSchedule = '0 20 * * *';
+// TESTING: Every 2 minutes
+const cronSchedule = '*/2 * * * *';
+
+// PRODUCTION: Every day at 8:23 PM (uncomment when testing is complete)
+//const cronSchedule = '23 20 * * *';
 
 cron.schedule(cronSchedule, () => {
     console.log('====================================================');
     const trigger = new Date().toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo' });
     console.log(`CRON: [${trigger}] - It's time to execute the task.`);
 
-    runScraper();
+    // Check if scraper is already running
+    if (isRunning) {
+        console.log('⚠️  Scraper is already running, skipping this execution');
+        return;
+    }
+
+    // Set flag and run scraper
+    isRunning = true;
+    runScraper().finally(() => {
+        isRunning = false;
+    });
 }, {
     schedule: true,
     timezone: "America/Santo_Domingo"
