@@ -144,7 +144,7 @@ async function runScraper() {
         await waitForSelectorWithScreenshot(page, loginButtonSelector);
         await page.click(loginButtonSelector);
 
-        await page.waitForNavigation({ waitUntil: 'networkidle2' });
+        await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 });
         console.log('Successfully logged in!');
 
         // Clear browser cache and storage to free memory
@@ -157,11 +157,12 @@ async function runScraper() {
             });
         });
 
-        // Wait for page to fully render after login
-        await new Promise(r => setTimeout(r, 2000));
+        // Wait for page to fully render after login (increased for Railway)
+        await new Promise(r => setTimeout(r, 5000));
 
         const accountSetting = '.oth';
-        await waitForSelectorWithScreenshot(page, accountSetting, {timeout: 30000, visible: true});
+        // Removed 'visible: true' for better compatibility with headless mode in Railway
+        await waitForSelectorWithScreenshot(page, accountSetting, {timeout: 60000});
         await page.hover(accountSetting);
 
         const transationalWeb = 'a[onclick="osm_enviarFormulario(\'form_filial_1\');"]';
@@ -269,7 +270,7 @@ async function runScraper() {
 let isRunning = false;
 
 // TESTING: Every 2 minutes
-const cronSchedule = '*/2 * * * *';
+const cronSchedule = '*/3 * * * *';
 
 // PRODUCTION: Every day at 8:23 PM (uncomment when testing is complete)
 //const cronSchedule = '23 20 * * *';
