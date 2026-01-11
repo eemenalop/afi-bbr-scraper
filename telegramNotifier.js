@@ -41,4 +41,26 @@ async function sendNotification(principalInfo, formattedMovements) {
     }
 }
 
-module.exports = {sendNotification};
+async function sendErrorScreenshot(screenshotPath, errorMessage) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+
+    if(!token || !chatId){
+        console.log('Error: TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID deben estar en el archivo .env');
+        return;
+    }
+    const bot = new TelegramBot(token);
+    
+    try {
+        // Enviar mensaje de error
+        await bot.sendMessage(chatId, `⚠️ *Error en el scraper*\n\n${errorMessage}`, { parse_mode: 'Markdown' });
+        
+        // Enviar screenshot
+        await bot.sendPhoto(chatId, screenshotPath, { caption: 'Screenshot del momento del error' });
+        console.log('Error screenshot sent to Telegram successfully!');
+    } catch (error) {
+        console.error('Error al enviar el screenshot de error por Telegram:', error);
+    }
+}
+
+module.exports = {sendNotification, sendErrorScreenshot};
