@@ -3,7 +3,6 @@ const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const path = require('path');
 const { sendNotification, sendErrorScreenshot } = require('./telegramNotifier');
-const cron = require('node-cron');
 
 const DB_FILE_PATH = path.join(__dirname, 'movements_db.json');
 
@@ -104,20 +103,12 @@ async function runScraper() {
         //Write the password ussing map and logic state
         const myPassword = process.env.MY_PASSWORD;
         
-        // Verify credentials are loaded (show partial for debugging)
-        console.log(`User loaded: ${myUser ? myUser.substring(0, 3) + '***' : 'NOT LOADED'}`);
-        console.log(`Password loaded: ${myPassword ? myPassword.substring(0, 2) + '***' + ' (length: ' + myPassword.length + ')' : 'NOT LOADED'}`);
-        
         const toggleCaseSelector = 'a.tt_SYM_UPP';
         let actualKeyboardState = 'UPPERCASE';
         console.log('Starting enter password...')
-        console.log('🔍 DEBUG: Password characters being pressed:');
         
         for(const char of myPassword){
             try {
-                // DEBUG: Log cada tecla que se está presionando
-                console.log(`  → Pressing: "${char}" (Type: ${!isNaN(parseInt(char)) ? 'Number' : (char >= 'A' && char <= 'Z') ? 'Uppercase' : (char >= 'a' && char <= 'z') ? 'Lowercase' : 'Special'})`);
-                
                 const IsNumber = !isNaN(parseInt(char));
                 const IsUpperCase = char >= 'A' && char <= 'Z';
                 const IsLowerCase = char >= 'a' && char <= 'z';
@@ -126,14 +117,12 @@ async function runScraper() {
                     const numberSelector = numberMap[char];
                     if (!numberSelector) throw new Error(`Number ${char} not found in map.`);
                     await page.click(numberSelector);
-                    console.log(`    ✓ Clicked number: ${char}`);
                 } else {
                     if(IsUpperCase || IsLowerCase){
                         const requiredState = IsUpperCase ? 'UPPERCASE' : 'LOWERCASE';
                         if(actualKeyboardState !== requiredState){
                             await page.click(toggleCaseSelector);
                             actualKeyboardState = requiredState;
-                            console.log(`    ↔ Toggled keyboard to: ${requiredState}`);
                             await new Promise(r => setTimeout(r, 150));
                         }
                     }
@@ -142,7 +131,6 @@ async function runScraper() {
                 const selectorXPath = `//*[normalize-space()="${keyToFind}"]`;
                 const key = await waitForSelectorWithScreenshot(page, `xpath/${selectorXPath}`, {visible: true, timeout: 5000});
                 await key.click();
-                console.log(`    ✓ Clicked key: ${keyToFind}`);
                 }
                 await new Promise(r => setTimeout(r, 150));
 
@@ -287,38 +275,16 @@ async function runScraper() {
     }    
 }
 
-//SCHEDULING LOGIC
+// Execute scraper immediately (Railway cron will trigger this script)
+console.log('====================================================');
+const startTime = new Date().toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo' });
+console.log(`[${startTime}] - Starting BBR scraper...`);
+console.log('====================================================');
 
-// Flag to prevent concurrent executions
-let isRunning = false;
-
-// TESTING: Every 2 minutes
-const cronSchedule = '*/3 * * * *';
-
-// PRODUCTION: Every day at 8:23 PM (uncomment when testing is complete)
-//const cronSchedule = '23 20 * * *';
-
-cron.schedule(cronSchedule, () => {
-    console.log('====================================================');
-    const trigger = new Date().toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo' });
-    console.log(`CRON: [${trigger}] - It's time to execute the task.`);
-
-    // Check if scraper is already running
-    if (isRunning) {
-        console.log('⚠️  Scraper is already running, skipping this execution');
-        return;
-    }
-
-    // Set flag and run scraper
-    isRunning = true;
-    runScraper().finally(() => {
-        isRunning = false;
-    });
-}, {
-    schedule: true,
-    timezone: "America/Santo_Domingo"
+runScraper().then(() => {
+    console.log('Scraper completed successfully');
+    process.exit(0);
+}).catch((error) => {
+    console.error('Scraper failed with error:', error);
+    process.exit(1);
 });
-
-console.log(`El scraper se ha iniciado y está en modo de espera.`);
-console.log(`La próxima ejecución está programada según el horario: ${cronSchedule}`);
-console.log(`Zona Horaria: America/Santo_Domingo`);
