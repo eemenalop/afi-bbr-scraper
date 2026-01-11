@@ -147,18 +147,24 @@ async function runScraper() {
         await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 });
         console.log('Successfully logged in!');
 
-        // Clear browser cache and storage to free memory
+        // Clear browser storage to free memory (BUT NOT COOKIES - they contain session data)
         await page.evaluate(() => {
             localStorage.clear();
             sessionStorage.clear();
-            // Clear cookies
-            document.cookie.split(";").forEach(function(c) { 
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-            });
+            // NOTE: NOT clearing cookies because they contain authentication session
         });
 
         // Wait for page to fully render after login (increased for Railway)
         await new Promise(r => setTimeout(r, 5000));
+
+        // DEBUG: Log page content to understand what's on the page
+        const pageContent = await page.content();
+        console.log('Page HTML length:', pageContent.length);
+        console.log('Page URL:', page.url());
+        
+        // Check if .oth exists in HTML
+        const othExists = pageContent.includes('class="oth"');
+        console.log('.oth exists in HTML:', othExists);
 
         const accountSetting = '.oth';
         // Removed 'visible: true' for better compatibility with headless mode in Railway
