@@ -265,12 +265,12 @@ async function runScraper() {
         console.error('An error occurred during the process:', error);
     } finally {
         if (browser) {
-            // Close all remaining pages first
-            const pages = await browser.pages();
-            await Promise.all(pages.map(page => page.close()));
-            
             console.log('Process complete. Closing the bot...');
-            await browser.close();
+            try {
+                await browser.close();
+            } catch (closeError) {
+                console.warn('Warning: failed to close browser cleanly:', closeError);
+            }
         }
     }    
 }

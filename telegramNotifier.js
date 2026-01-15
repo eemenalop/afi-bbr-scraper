@@ -35,9 +35,11 @@ async function sendNotification(principalInfo, formattedMovements) {
         });
         await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
         console.log('Notification sent successfully!');
+        return true;
 
     } catch (error) {
         console.error('Error al enviar la notificación de Telegram:', error);
+        return false;
     }
 }
 
@@ -53,7 +55,7 @@ async function sendErrorScreenshot(screenshotPath, errorMessage) {
     
     try {
         // Enviar mensaje de error
-        await bot.sendMessage(chatId, `⚠️ *Error en el scraper*\n\n${errorMessage}`, { parse_mode: 'Markdown' });
+        await bot.sendMessage(chatId, `*Error en el scraper*\n\n${errorMessage}`, { parse_mode: 'Markdown' });
         
         // Enviar screenshot
         await bot.sendPhoto(chatId, screenshotPath, { caption: 'Screenshot del momento del error' });
