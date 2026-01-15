@@ -60,8 +60,10 @@ async function sendErrorScreenshot(screenshotPath, errorMessage) {
         // Enviar screenshot
         await bot.sendPhoto(chatId, screenshotPath, { caption: 'Screenshot del momento del error' });
         console.log('Error screenshot sent to Telegram successfully!');
+        return true;
     } catch (error) {
         console.error('Error al enviar el screenshot de error por Telegram:', error);
+        return false;
     }
 }
 
@@ -76,8 +78,10 @@ async function sendSimpleMessage(message) {
     try {
         await bot.sendMessage(chatId, message);
         console.log('Simple message sent to Telegram successfully!');
+        return true;
     } catch (error) {
         console.error('Error al enviar el mensaje simple por Telegram:', error);
+        return false;
     }
 }
 
