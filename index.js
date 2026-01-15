@@ -2,7 +2,8 @@ require('dotenv').config();
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const path = require('path');
-const { sendNotification, sendErrorScreenshot } = require('./telegramNotifier');
+const { sendNotification, sendErrorScreenshot, sendSimpleMessage} = require('./telegramNotifier');
+const { send } = require('process');
 
 const DB_FILE_PATH = path.join(__dirname, 'movements_db.json');
 
@@ -256,7 +257,7 @@ async function runScraper() {
             console.log('Current movements saved to memory file.');
         } else {
             console.log('No new movements found.');
-            await sendNotification(principalInfo, "No new movements found.");
+            await sendSimpleMessage('No new movements found in the latest check.');
         }
         await fs.writeFile(DB_FILE_PATH, JSON.stringify(formattedMovements, null, 2));
         await page.close(); // Close the page immediately after data extraction

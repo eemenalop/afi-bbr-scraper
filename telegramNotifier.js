@@ -65,4 +65,20 @@ async function sendErrorScreenshot(screenshotPath, errorMessage) {
     }
 }
 
-module.exports = {sendNotification, sendErrorScreenshot};
+async function sendSimpleMessage(message) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    if(!token || !chatId){
+        console.log('Error: TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID deben estar en el archivo .env');
+        return;
+    }
+    const bot = new TelegramBot(token);
+    try {
+        await bot.sendMessage(chatId, message);
+        console.log('Simple message sent to Telegram successfully!');
+    } catch (error) {
+        console.error('Error al enviar el mensaje simple por Telegram:', error);
+    }
+}
+
+module.exports = {sendNotification, sendErrorScreenshot, sendSimpleMessage};
