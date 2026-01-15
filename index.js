@@ -253,11 +253,12 @@ async function runScraper() {
         if (newMovements.length > 0) {
             console.log(`¡${newMovements.length} new movement(s) found!`);
             await sendNotification(principalInfo, newMovements);
+            console.log('Current movements saved to memory file.');
         } else {
             console.log('No new movements found.');
+            await sendNotification(principalInfo, "No new movements found.");
         }
         await fs.writeFile(DB_FILE_PATH, JSON.stringify(formattedMovements, null, 2));
-        console.log('Current movements saved to memory file.');
         await page.close(); // Close the page immediately after data extraction
 
         // --- END OF DATA EXTRACTION ---
